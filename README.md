@@ -47,6 +47,30 @@ planned_new_commit_count = max(0, target_commit_count - existing_author_commit_c
 9. 创建计划内提交，`push` 到默认分支并验证远端包含提交。
 10. 每个受影响仓库单独创建 cleanup PR，删除本次生成的 `docs/` 文件。
 
+## 执行流程
+
+```mermaid
+flowchart LR
+    A["扫描 GitHub 仓库"] --> B["筛选 eligible repositories"]
+    B --> C["生成 Excel 审核表"]
+    C --> D{"用户确认?"}
+    D -- "否" --> E["停止，不修改仓库"]
+    D -- "是" --> F["创建计划内提交"]
+    F --> G["push 到默认分支"]
+    G --> H["验证远端可达"]
+    H --> I["按仓库创建 cleanup 分支"]
+    I --> J["删除 manifest 记录的 docs 文件"]
+    J --> K["打开 cleanup PR"]
+```
+
+## 执行模式
+
+| 模式 | 用途 | 修改仓库文件 | push 到 GitHub | 典型输出 |
+| --- | --- | --- | --- | --- |
+| `plan-only` | 只生成 Excel 审核计划 | 否 | 否 | Excel / TSV 审核表 |
+| `push-and-cleanup-pr` | 用户确认后执行完整流程 | 是 | 是 | pushed commits、cleanup PR、manifest |
+| `cleanup-pr` | 基于已有 manifest 只创建清理 PR | 是，只改 cleanup 分支 | 是，只 push cleanup 分支 | cleanup PR URL、删除文件统计 |
+
 ## 快速上手
 
 生成每日聚合审核表：
@@ -89,6 +113,13 @@ date | time | repo | kind | task_type | message | path | summary | target_commit
 ```
 
 计划脚本只负责生成审核材料，不会 `commit`、`push` 或创建 cleanup PR。
+
+Excel 审核表示例：
+
+| 日期 | 目标提交数 | 已有作者提交数 | 本次计划新增数 | commit 细则 |
+| --- | ---: | ---: | ---: | --- |
+| 2026-03-05 | 4 | 1 | 3 | `21:10 KnowFoundry-RAG-Console docs: add retrieval notes`; `22:35 LLM-Wiki analysis: record validation split`; `23:18 OpenSense tests: document smoke test plan` |
+| 2026-03-08 | 3 | 0 | 3 | `10:24 carbon-tower-predictor model: add lag feature notes`; `16:40 vectorpeak-blogs docs: add topic notes`; `20:05 kaggle-tabular-forge eval: add baseline checklist` |
 
 ## Cleanup PR
 
@@ -139,3 +170,21 @@ fill-contributions-graph/
 - 历史重写只作为事故恢复经验，不作为常规执行路径。
 - 不创建空 commit、不写临时占位代码、不生成提交后再删除的假内容。
 - 如果本地已有同仓库 dirty worktree，必须先询问用户是否使用隔离 clone。
+
+## FAQ
+
+### 为什么本地 commit 不算贡献？
+
+GitHub 贡献图统计的是 GitHub 服务器上可归属到账号的贡献事件。只在本地执行 `git commit`，GitHub 不知道这条提交存在，所以不会计入贡献图。
+
+### 为什么必须 push？
+
+commit 需要进入 GitHub 仓库，并且通常需要位于默认分支或 `gh-pages` 分支，才可能被 contribution graph 统计。只 commit 不 push，不会被 GitHub 统计。
+
+### 为什么 cleanup PR 是一仓库一个？
+
+GitHub PR 只能属于一个仓库，不能跨多个仓库提交同一个 PR。跨仓库执行时，每个受影响仓库都需要单独的 cleanup 分支和 cleanup PR。
+
+### GitHub 贡献图为什么可能延迟刷新？
+
+贡献图不是每次 push 后都立即同步重算。GitHub 会异步处理提交归属、分支可达性、邮箱匹配、PR/issue 等贡献事件，因此页面显示可能存在缓存或延迟。
