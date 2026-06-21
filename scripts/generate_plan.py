@@ -9,6 +9,7 @@ import random
 import shutil
 import subprocess
 import sys
+import time as time_module
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from pathlib import Path
@@ -115,17 +116,23 @@ def run_gh_repo_list(account: str, include_private: bool) -> list[Repo]:
 
 def count_existing_commits(account: str, author: str, day: date) -> int:
     query = f"author:{author} author-date:{day.isoformat()}..{day.isoformat()} user:{account}"
-    result = run_gh([
-        "gh",
-        "api",
-        "-H",
-        "Accept: application/vnd.github+json",
-        f"/search/commits?q={quote_plus(query)}&per_page=1",
-        "--jq",
-        ".total_count",
-    ])
-    if result.returncode != 0:
-        detail = (result.stderr or result.stdout).strip()
+    result = None
+    for attempt in range(1, 4):
+        result = run_gh([
+            "gh",
+            "api",
+            "-H",
+            "Accept: application/vnd.github+json",
+            f"/search/commits?q={quote_plus(query)}&per_page=1",
+            "--jq",
+            ".total_count",
+        ])
+        if result.returncode == 0:
+            break
+        if attempt < 3:
+            time_module.sleep(attempt)
+    if result is None or result.returncode != 0:
+        detail = ((result.stderr or result.stdout).strip() if result else "unknown error")
         raise SystemExit(f"Failed to count existing commits for {day.isoformat()}: {detail}")
     try:
         return int(result.stdout.strip() or "0")

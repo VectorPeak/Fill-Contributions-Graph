@@ -5,7 +5,8 @@ __pycache__/
 *.xls
 *.xlsx
 *.tsv
-plan*.xml
 manifest*.json
+push-manifest*.json
+withdraw-manifest*.json
 rollback-dry-run.md
 withdrawal-dry-run.md
