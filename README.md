@@ -3,7 +3,7 @@
 </h1>
 
 <p align="center">
-  一个先审核、再推送、再按仓库清理 docs 的 GitHub 贡献计划技能
+  GitHub Contribution Graph 荒漠化绿化治理工程
 </p>
 
 <p align="center">
