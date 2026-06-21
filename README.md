@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-orange" alt="license Apache-2.0"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-orange" alt="license MIT"></a>
   <img src="https://img.shields.io/badge/python-3.9%2B-blue" alt="python 3.9+">
   <img src="https://img.shields.io/badge/Codex-Skill-555555" alt="Codex Skill">
   <img src="https://img.shields.io/badge/workflow-Excel--first-brightgreen" alt="Excel first workflow">
