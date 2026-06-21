@@ -1,10 +1,21 @@
-# Github 绿墙刷漆计划
+<h1 align="center">Github 绿墙刷漆计划</h1>
 
-显式调用的 Codex Skill：扫描用户自己的 GitHub 仓库，生成可审核的 Excel 贡献计划，扣除已有提交数，并在用户确认后执行 `push -> cleanup PR` 工作流。
+<p align="center">
+  一个先审核、再推送、再按仓库清理 docs 的 GitHub 贡献计划技能
+</p>
 
-```text
-GitHub account -> repo scan -> existing commit deduction -> Excel review -> push -> cleanup PR
-```
+<p align="center">
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-orange" alt="license Apache-2.0"></a>
+  <img src="https://img.shields.io/badge/python-3.9%2B-blue" alt="python 3.9+">
+  <img src="https://img.shields.io/badge/Codex-Skill-555555" alt="Codex Skill">
+  <img src="https://img.shields.io/badge/workflow-Excel--first-brightgreen" alt="Excel first workflow">
+</p>
+
+<p align="center">
+  简体中文
+</p>
+
+---
 
 ## 为什么要做
 
