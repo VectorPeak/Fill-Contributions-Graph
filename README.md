@@ -2,7 +2,7 @@
 
 Explicit-only Codex skill for planning GitHub maintenance activity across repositories.
 
-This skill is intentionally conservative: it plans first, writes an Excel review file, waits for explicit approval, and records every pushed commit in manifests before any withdrawal or recovery step.
+This skill is intentionally conservative: it plans first, writes an Excel review file, waits for explicit approval, and records every pushed commit and cleanup PR in manifests.
 
 ```text
 GitHub account -> repo scan -> existing commit deduction -> Excel review -> approved execution
@@ -15,7 +15,7 @@ GitHub account -> repo scan -> existing commit deduction -> Excel review -> appr
 - Generates a deterministic activity plan for a date range.
 - Subtracts commits that already exist on GitHub for each planned date.
 - Writes an Excel review file before any execution.
-- Supports manifest-driven push, withdrawal, and history-rewrite recovery workflows.
+- Supports manifest-driven push and per-repository cleanup PR workflows.
 
 ## Safety Rules
 
@@ -67,19 +67,19 @@ Then it plans only the remainder:
 planned_new_commit_count = max(0, target_commit_count - existing_author_commit_count)
 ```
 
-## Recovery Workflow
+## Cleanup PR Workflow
 
-If a `git revert` withdrawal was pushed and the user later asks to remove the revert commits from GitHub-visible history, do not revert the reverts. That creates additional current-day commits.
+After the Excel plan is approved, the normal execution path is:
 
-Use history-rewrite recovery only after explicit confirmation:
+1. Create planned commits and push them to each repository default branch.
+2. Verify every pushed commit is reachable from the remote default branch.
+3. Create one cleanup branch per affected repository.
+4. Delete manifest-owned generated docs from that repository.
+5. Commit and push the cleanup branch.
+6. Open one draft cleanup PR per repository.
+7. Verify no manifest-owned generated docs remain on each cleanup PR branch.
 
-1. Load the push and withdrawal manifests.
-2. Verify affected repositories, branches, `pre_withdraw_head`, `post_withdraw_head`, source SHAs, and revert SHAs.
-3. For branches still at `post_withdraw_head`, reset to `pre_withdraw_head`.
-4. For branches with legitimate later commits, replay only those later commits on top of `pre_withdraw_head`.
-5. Push with `git push --force-with-lease`.
-6. Verify no recorded revert SHA remains reachable from the remote default branch.
-7. Open cleanup PRs that delete restored generated docs.
+A GitHub PR is scoped to one repository, so cross-repository cleanup requires one PR per affected repository.
 
 Generated docs commonly live under:
 
@@ -95,6 +95,12 @@ docs/review/
 ```
 
 Delete manifest-owned generated files from those directories, and remove directories when they become empty.
+
+## Operational Lesson
+
+History rewriting is not the default workflow. Keep it only as incident recovery knowledge.
+
+If an older run used `git revert` and the user later asks to remove those revert commits from GitHub-visible history, do not revert the reverts. That creates additional current-day commits. Use `git push --force-with-lease` only after explicit repository-by-repository confirmation, preserve legitimate later commits, verify the recorded revert SHAs are no longer reachable, and then return to the cleanup PR workflow.
 
 ## Files
 

@@ -7,7 +7,7 @@ description: Explicit-only skill for planning and optionally applying retrospect
 
 Use this skill only after the user explicitly invokes it by name.
 
-The skill generates a reproducible retrospective maintenance plan across the user's own GitHub repositories. It must output an Excel review file first, then wait for explicit user approval before executing a push-and-withdraw workflow.
+The skill generates a reproducible retrospective maintenance plan across the user's own GitHub repositories. It must output an Excel review file first, then wait for explicit user approval before executing a push-and-cleanup-PR workflow.
 
 ## Boundaries
 
@@ -17,12 +17,12 @@ The skill generates a reproducible retrospective maintenance plan across the use
 - Do not operate on repositories that are not owned or maintained by the target account.
 - Do not include forks by default.
 - Do not push unless the user explicitly requests push after reviewing the plan.
-- Do not mutate Git history during withdrawal until the user reviews the pushed commit manifest and withdrawal dry-run.
+- Do not mutate Git history during normal cleanup.
 - Do not create standalone local-only commit batches.
-- Do not execute push-and-withdraw until the user reviews and explicitly approves the generated Excel plan.
-- Do not open PRs, issues, releases, or comments.
+- Do not execute push-and-cleanup-PR until the user reviews and explicitly approves the generated Excel plan.
+- Do not open PRs, issues, releases, or comments except the per-repository cleanup PRs created by the approved workflow.
 - Prefer durable artifacts: documentation, analysis notes, evaluation checklists, test plans, configuration notes, maintenance checklists.
-- Do not remove pushed revert records with another revert. If the user asks to remove revert commits from public history, require explicit history-rewrite approval and use `git push --force-with-lease`.
+- Do not use history rewriting as the normal workflow.
 
 ## Required Inputs
 
@@ -65,11 +65,10 @@ Do not create repositories unless the user explicitly asks for repository creati
 Default mode is `plan-only`.
 
 - `plan-only`: generate a dated Excel review plan. Do not write repository files.
-- `push-and-withdraw`: after explicit approval of the Excel plan, create durable commits, push them to GitHub default branches, verify the remote contains the pushed commits, then prepare the withdrawal step.
-- `withdraw`: withdraw only commits created by this skill and recorded in the pushed manifest.
-- `history-rewrite-recovery`: after explicit user confirmation, remove skill-created revert commits from remote default branches, preserve unrelated later commits, then create cleanup PRs for the restored generated docs.
+- `push-and-cleanup-pr`: after explicit approval of the Excel plan, create durable commits, push them to GitHub default branches, verify the remote contains the pushed commits, then create one cleanup PR per affected repository to delete generated docs.
+- `cleanup-pr`: create cleanup PRs only from a pushed manifest. Do not create additional retrospective commits.
 
-Do not offer `local-commit` as a final execution mode. A local commit may exist only as a transient step inside `push-and-withdraw`, and it must be pushed before the operation is considered complete.
+Do not offer `local-commit` as a final execution mode. A local commit may exist only as a transient step inside `push-and-cleanup-pr`, and it must be pushed before the operation is considered complete.
 
 When unsure, stay in `plan-only`.
 
@@ -78,7 +77,7 @@ When unsure, stay in `plan-only`.
 Always split execution into two turns:
 
 1. Generate an Excel review file with daily totals and commit details.
-2. Stop and ask the user to approve that exact file before any `push-and-withdraw`.
+2. Stop and ask the user to approve that exact file before any `push-and-cleanup-pr`.
 
 The Excel review file must include:
 
@@ -110,43 +109,31 @@ Example: if the profile generates `5` commits for `2026-03-25` and GitHub alread
 
 ## Worktree Selection
 
-Before `push-and-withdraw`, map each planned repository to a local worktree.
+Before `push-and-cleanup-pr`, map each planned repository to a local worktree.
 
 - Prefer an existing local repository only when its remote URL matches the planned GitHub repository and `git status --porcelain` is clean.
 - If the matching local repository is dirty, stop and ask the user whether to use an isolated clone or handle the dirty worktree first.
 - If multiple local clones match the same repository, choose a clean canonical path only after showing the candidates to the user.
-- Use an isolated clone when the user wants a test run, when existing worktrees are dirty, or when withdrawal safety is more important than reusing local checkout state.
+- Use an isolated clone when the user wants a test run, when existing worktrees are dirty, or when cleanup safety is more important than reusing local checkout state.
 - Record the selected path and pre-session `HEAD` for every repository in the manifest before creating any commit.
 
-## Push-And-Withdraw Mode
+## Push-And-Cleanup-PR Mode
 
-Push-and-withdraw must be manifest-driven.
+Push-and-cleanup-PR must be manifest-driven.
 
 - Create commits only after Excel approval.
 - Push every skill-created commit to the repository default branch.
-- Verify that each pushed commit is reachable from the remote default branch before starting withdrawal.
-- Record repository path, branch, pre-session `HEAD`, pushed commit SHAs, remote verification status, and withdrawal SHAs in the manifest.
-- Default withdrawal is `git revert`, followed by pushing the revert commits. This withdraws the content while preserving public history.
-- Do not use `git reset --hard` plus force push unless the user explicitly requests history rewriting and confirms each affected repository.
-- Warn that force-pushing away the original commits may remove or destabilize contribution graph attribution because the commits are no longer reachable from the default branch.
-- Never withdraw unrelated user commits, merge commits, or commits not created by this skill.
-- Show a dry-run summary before any withdrawal: repository, current branch, current `HEAD`, pushed commit SHAs, withdrawal method, expected revert commits, and whether the remote default branch contains the pushed commits.
+- Verify that each pushed commit is reachable from the remote default branch before creating cleanup branches.
+- Record repository path, branch, pre-session `HEAD`, pushed commit SHAs, remote verification status, cleanup branch, cleanup commit SHA, and cleanup PR URL in the manifest.
+- For each affected repository, create a cleanup branch from the remote default branch and delete the generated docs recorded in the manifest.
+- Open one draft cleanup PR per affected repository. GitHub PRs cannot span multiple repositories.
+- Do not use `git revert` as the default cleanup path.
+- Do not use `git reset --hard` plus force push in the normal workflow.
+- Never delete unrelated user docs, unrelated commits, merge commits, or files not created by this skill unless the user explicitly asks to remove whole generated docs directories.
+- Show a cleanup summary: repository, cleanup branch, deleted file count, cleanup commit SHA, PR URL, and whether all manifest-owned docs were removed from the PR branch.
 - Stop on dirty working trees unless the user explicitly provides a safe stash/commit instruction.
 
-## History-Rewrite Recovery
-
-Use this only when the user explicitly confirms that public history may be rewritten for each affected default branch.
-
-This mode is for the case where `git revert` was used as withdrawal, but the user then asks to remove the revert commits themselves from GitHub-visible history. Do not solve that by reverting the revert commits, because that creates more current-day commits. Instead:
-
-1. Load the pushed manifest and withdrawal manifest.
-2. Verify every affected repository, branch, `pre_withdraw_head`, `post_withdraw_head`, source commit SHA, and revert commit SHA.
-3. Confirm all affected worktrees are clean.
-4. For repositories whose remote default branch is exactly `post_withdraw_head`, reset the branch to `pre_withdraw_head` and push with `--force-with-lease`.
-5. For repositories with legitimate later commits after `post_withdraw_head`, drop only the revert segment and replay or rebase the later commits onto `pre_withdraw_head`.
-6. Verify no recorded revert SHA remains reachable from the remote default branch.
-7. Create cleanup branches and PRs to delete restored generated docs. A GitHub PR is scoped to one repository, so cross-repository cleanup requires one PR per affected repository.
-8. Delete only manifest-owned generated docs unless the user explicitly asks to remove whole generated directories.
+## Cleanup Directories
 
 Generated docs directories commonly used by this skill are:
 
@@ -162,6 +149,20 @@ docs/review/
 ```
 
 When the user asks to "delete the docs folders", remove the generated files under these directories in each affected repository and remove now-empty directories. Do not delete unrelated documentation outside the manifest scope.
+
+## Operational Lessons
+
+Keep history rewriting as incident recovery knowledge, not as the default workflow.
+
+If an older run used `git revert` and the user later asks to remove those revert commits from GitHub-visible history, do not revert the revert commits. That creates additional current-day commits. Instead, only after explicit confirmation for every affected repository:
+
+1. Load the pushed manifest and withdrawal manifest.
+2. Verify every affected repository, branch, `pre_withdraw_head`, `post_withdraw_head`, source commit SHA, and revert commit SHA.
+3. Confirm all affected worktrees are clean.
+4. For repositories whose remote default branch is exactly `post_withdraw_head`, reset the branch to `pre_withdraw_head` and push with `--force-with-lease`.
+5. For repositories with legitimate later commits after `post_withdraw_head`, drop only the revert segment and replay or rebase the later commits onto `pre_withdraw_head`.
+6. Verify no recorded revert SHA remains reachable from the remote default branch.
+7. Return to the normal cleanup path: create one cleanup PR per repository to delete generated docs.
 
 ## Activity Profiles
 
@@ -196,11 +197,11 @@ Allow a user-provided seed to override this value.
 10. Generate commit tasks matching each repository type.
 11. Count existing author commits per planned active day and subtract them from the generated daily targets.
 12. Output an Excel review file and stop for mandatory user approval.
-13. In `push-and-withdraw`, only after Excel approval, write durable files and create commits with both `GIT_AUTHOR_DATE` and `GIT_COMMITTER_DATE`.
+13. In `push-and-cleanup-pr`, only after Excel approval, write durable files and create commits with both `GIT_AUTHOR_DATE` and `GIT_COMMITTER_DATE`.
 14. Push the created commits to the GitHub default branch and verify remote reachability.
-15. Prepare withdrawal immediately after remote verification.
-16. In `withdraw`, default to reverting the pushed commits and pushing the revert commits; use force rewriting only after separate explicit confirmation.
-17. In `history-rewrite-recovery`, remove the recorded revert commits with `--force-with-lease`, preserve later legitimate commits, verify revert SHAs are unreachable, and then open cleanup PRs for restored generated docs.
+15. Create one cleanup branch per affected repository from the remote default branch.
+16. Delete generated docs recorded in the manifest, commit the cleanup branch, push it, and open one draft PR per repository.
+17. Verify all manifest-owned generated docs are absent from each cleanup PR branch.
 
 ## Task Type Distribution
 
@@ -232,7 +233,7 @@ Use `scripts/generate_plan.py` for deterministic plan generation:
 python scripts/generate_plan.py --account VectorPeak --start 2026-03-01 --end 2026-04-01 --profile vibe_coding_builder --excel-out plan.xls
 ```
 
-The script only generates a plan and Excel review file. It does not commit, push, or withdraw.
+The script only generates a plan and Excel review file. It does not commit, push, or create cleanup PRs.
 
 Default output is a daily table:
 
@@ -253,14 +254,16 @@ For plan output, include:
 - default daily table with `date`, `target_commit_count`, `existing_commit_count`, `planned_new_commit_count`, and `commit_details`;
 - warnings for repository gate failures or excluded repositories.
 
-For push-and-withdraw execution summaries, include:
+For push-and-cleanup-PR execution summaries, include:
 
 - repository path;
 - branch;
 - pushed commit SHA;
 - remote verification status;
-- withdrawal method;
-- withdrawal commit SHA when using revert;
+- cleanup branch;
+- cleanup commit SHA;
+- cleanup PR URL;
+- deleted generated docs count;
 - author date;
 - message;
-- whether the remote default branch contains the pushed commit before withdrawal.
+- whether the remote default branch contains the pushed commit before cleanup.
