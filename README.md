@@ -1,5 +1,5 @@
 <h1 align="center">
-  <a href="https://github.com/VectorPeak/fill-contributions-graph">fill-contributions-graph</a> | 绿墙刷漆计划
+  fill-contributions-graph | 绿墙刷漆计划
 </h1>
 
 <p align="center">
@@ -20,6 +20,8 @@
 ---
 
 ## 为什么要做
+
+GitHub contribution graph 空荡荡？用它就对了，白墙绿化计划。
 
 GitHub contribution graph 只会统计已经进入 GitHub 仓库、位于默认分支或 `gh-pages` 分支、并且作者邮箱能归属到账号的提交。只在本地 `git commit` 不会改变贡献图；提交后不 `push`，也不会被 GitHub 统计。
 
