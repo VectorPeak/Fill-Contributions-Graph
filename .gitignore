@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+
+# Generated review artifacts
+*.xls
+*.xlsx
+*.tsv
+plan*.xml
+manifest*.json
+rollback-dry-run.md
+withdrawal-dry-run.md

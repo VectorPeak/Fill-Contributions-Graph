@@ -1,0 +1,6 @@
+interface:
+  display_name: "Fill Contributions Graph"
+  short_description: "Plan realistic retrospective maintenance commits."
+  default_prompt: "Use $fill-contributions-graph to generate a retrospective maintenance commit plan for my GitHub repositories."
+policy:
+  allow_implicit_invocation: false
