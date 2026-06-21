@@ -23,6 +23,10 @@
 
 GitHub Contribution Graph 空荡荡？用它就对了，赛博植树造林计划。
 
+<p align="center">
+  <img src="assets/contribution-graph-showcase.gif" alt="GitHub Contribution Graph 赛博植树造林计划" width="931">
+</p>
+
 GitHub contribution graph 只会统计已经进入 GitHub 仓库、位于默认分支或 `gh-pages` 分支、并且作者邮箱能归属到账号的提交。只在本地 `git commit` 不会改变贡献图；提交后不 `push`，也不会被 GitHub 统计。
 
 `fill-contributions-graph` 把跨仓库维护操作拆成可审核、可执行、可追踪的流程。它不会隐式触发，也不会直接跳到提交，而是先生成 Excel 审核表，让用户确认日期、提交数、仓库分布和 commit 细则。
