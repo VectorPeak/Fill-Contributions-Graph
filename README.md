@@ -1,5 +1,5 @@
 <h1>
-  Fill-Contributions-Graph | GitHub 绿墙刷漆计划
+  FILL-CONTRIBUTIONS-GRAPH | GitHub 绿墙刷漆计划
 </h1>
 
 ---
