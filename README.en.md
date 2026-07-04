@@ -1,5 +1,5 @@
 <h1>
-  FILL-CONTRIBUTIONS-GRAPH | GitHub Green Wall Painting Plan
+  Fill-Contributions-Graph | GitHub Green Wall Painting Plan
 </h1>
 
 ---
