@@ -1,20 +1,24 @@
-<h1 align="center">
-  fill-contributions-graph | 绿墙刷漆计划
+<h1>
+  Fill-Contributions-Graph | GitHub 绿墙刷漆计划
 </h1>
 
+---
+
 <p align="center">
-  GitHub Contribution Graph 荒漠绿化治理工程
+  <strong>Evidence-first GitHub Contribution Graph Refill Forge</strong>
 </p>
 
 <p align="center">
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-orange" alt="license MIT"></a>
   <img src="https://img.shields.io/badge/python-3.9%2B-blue" alt="python 3.9+">
   <img src="https://img.shields.io/badge/Codex-Skill-555555" alt="Codex Skill">
-  <img src="https://img.shields.io/badge/workflow-Excel--first-brightgreen" alt="Excel first workflow">
+  <img src="https://img.shields.io/badge/workflow-Excel--first-brightgreen" alt="Excel-first workflow">
+  <img src="https://img.shields.io/badge/review-first-2ea44f" alt="review first">
+  <img src="https://img.shields.io/badge/cleanup-PR-6f42c1" alt="cleanup PR">
 </p>
 
 <p align="center">
-  简体中文
+  简体中文 · 审核优先 · 先 push 后 cleanup
 </p>
 
 ---
