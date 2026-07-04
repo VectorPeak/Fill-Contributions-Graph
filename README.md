@@ -21,6 +21,10 @@
   简体中文 · 审核优先 · 先 push 后 cleanup
 </p>
 
+<p align="center">
+  <a href="./README.en.md">English</a>
+</p>
+
 ---
 
 ## 为什么要做
